@@ -12,7 +12,7 @@ A pull request is ready only when all of these conditions hold:
 - the selected attestation is an authenticated GitHub comment by an allowed maintainer;
 - semantic and authority/security lanes use distinct review-run identifiers;
 - both lane dispositions are exactly `ACCEPT`;
-- each lane links nonempty durable evidence on an allowed HTTPS host;
+- each lane links a non-root durable evidence record on an allowed HTTPS host;
 - all author attestations are true and the branch is current with its base;
 - exactly one matching outcome label is present; and
 - the maintainer explicitly accepts the limitations of solo-maintainer review.

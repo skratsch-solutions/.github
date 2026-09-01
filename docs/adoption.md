@@ -11,7 +11,8 @@ inherited automatically.
 3. Replace `REVIEWED_ACTION_SHA` with the full commit SHA of a reviewed release
    of this repository. Do not use a mutable branch or tag in protected callers.
 4. Set `maintainer-user-ids` to a JSON array of stable GitHub numeric user IDs.
-5. Set `evidence-hosts` to the approved HTTPS evidence hosts.
+5. Set `evidence-hosts` to the approved HTTPS evidence hosts. Every evidence URL
+   must identify a non-root record path on one of those exact hosts.
 6. Open a test pull request and exercise accepted, stale-SHA, unauthorized-user,
    malformed-disposition, missing-evidence, and deleted-comment cases.
 7. Require the `review-packet` check in repository rules or branch protection.

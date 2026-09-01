@@ -8,7 +8,7 @@ inputs:
     description: JSON array of allowed stable GitHub numeric user IDs.
     required: true
   evidence-hosts:
-    description: JSON array of allowed HTTPS evidence hosts.
+    description: JSON array of allowed HTTPS evidence hosts; URLs must identify a non-root record path.
     required: false
     default: '["app.notion.com"]'
   max-api-pages:
