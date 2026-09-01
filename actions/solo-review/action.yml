@@ -1,0 +1,28 @@
+name: Skratsch solo-maintainer review readiness
+description: Validate a SHA-bound, authenticated, two-lane review packet.
+inputs:
+  github-token:
+    description: GitHub token with read access to pull requests and issue comments.
+    required: true
+  maintainer-user-ids:
+    description: JSON array of allowed stable GitHub numeric user IDs.
+    required: true
+  evidence-hosts:
+    description: JSON array of allowed HTTPS evidence hosts.
+    required: false
+    default: '["app.notion.com"]'
+  max-api-pages:
+    description: Fail-closed pagination limit.
+    required: false
+    default: '20'
+runs:
+  using: composite
+  steps:
+    - name: Verify SHA-bound solo-maintainer review packet
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        SKRATSCH_MAINTAINER_USER_IDS: ${{ inputs.maintainer-user-ids }}
+        SKRATSCH_EVIDENCE_HOSTS: ${{ inputs.evidence-hosts }}
+        SKRATSCH_MAX_API_PAGES: ${{ inputs.max-api-pages }}
+      run: node "$GITHUB_ACTION_PATH/review-readiness.mjs"

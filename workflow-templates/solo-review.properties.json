@@ -1,0 +1,6 @@
+{
+  "name": "Skratsch solo-maintainer review packet",
+  "description": "Validate exact-SHA, authenticated semantic and authority/security review evidence.",
+  "iconName": "octicon shield-check",
+  "categories": ["Code review", "Automation"]
+}
