@@ -31,7 +31,7 @@ function parseUniqueBlock(text, marker) {
 function validEvidenceUrl(value, allowedHosts) {
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && allowedHosts.includes(url.hostname) && url.pathname.startsWith("/p/");
+    return url.protocol === "https:" && allowedHosts.includes(url.hostname) && url.pathname !== "/";
   } catch {
     return false;
   }
@@ -158,15 +158,16 @@ export async function fetchAllPages(pathname, token, maxPages, request = github)
 export function policyFromEnvironment(env = process.env) {
   const maintainerUserIds = JSON.parse(env.SKRATSCH_MAINTAINER_USER_IDS ?? "[]");
   const evidenceHosts = JSON.parse(env.SKRATSCH_EVIDENCE_HOSTS ?? '["app.notion.com"]');
-  const maxApiPages = Number.parseInt(env.SKRATSCH_MAX_API_PAGES ?? "20", 10);
+  const maxApiPagesInput = env.SKRATSCH_MAX_API_PAGES ?? "20";
+  if (!/^(?:[1-9]|[1-9][0-9]|100)$/.test(maxApiPagesInput)) {
+    throw new Error("max-api-pages must be a base-10 integer from 1 to 100");
+  }
+  const maxApiPages = Number(maxApiPagesInput);
   if (!Array.isArray(maintainerUserIds) || maintainerUserIds.length === 0 || !maintainerUserIds.every(Number.isSafeInteger)) {
     throw new Error("maintainer-user-ids must be a nonempty JSON array of integer GitHub user IDs");
   }
   if (!Array.isArray(evidenceHosts) || evidenceHosts.length === 0 || !evidenceHosts.every((host) => typeof host === "string" && /^[A-Za-z0-9.-]+$/.test(host))) {
     throw new Error("evidence-hosts must be a nonempty JSON array of hostnames");
-  }
-  if (!Number.isSafeInteger(maxApiPages) || maxApiPages < 1 || maxApiPages > 100) {
-    throw new Error("max-api-pages must be an integer from 1 to 100");
   }
   return { maintainerUserIds, evidenceHosts, maxApiPages, requiredLanes: ["semantic", "authority-security"] };
 }

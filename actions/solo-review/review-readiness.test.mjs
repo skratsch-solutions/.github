@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { evaluateReviewReadiness, fetchAllPages, policyFromEnvironment } from "./review-readiness.mjs";
 
 const SHA = "a".repeat(40);
@@ -41,9 +42,32 @@ assert.equal(evaluateReviewReadiness(scenario({ comments: [comment(7, attestatio
 assert.equal(evaluateReviewReadiness(scenario({ comments: [comment(7, attestation("ACCEPT", "ACCEPT", { authoritySecurity: { disposition: "ACCEPT", reviewRunId: "codex:semantic:run-001", evidenceUrl: "https://app.notion.com/p/security" } }))] })).ok, false, "duplicate run IDs must fail");
 assert.throws(() => policyFromEnvironment({ SKRATSCH_MAINTAINER_USER_IDS: "[]" }), /nonempty/);
 assert.throws(() => policyFromEnvironment({ SKRATSCH_MAINTAINER_USER_IDS: '["owner"]' }), /integer/);
+assert.throws(() => policyFromEnvironment({ SKRATSCH_MAINTAINER_USER_IDS: "[42]", SKRATSCH_MAX_API_PAGES: "20junk" }), /base-10 integer/);
+assert.throws(() => policyFromEnvironment({ SKRATSCH_MAINTAINER_USER_IDS: "[42]", SKRATSCH_MAX_API_PAGES: "01" }), /base-10 integer/);
+
+const customPolicy = policyFromEnvironment({ SKRATSCH_MAINTAINER_USER_IDS: "[42]", SKRATSCH_EVIDENCE_HOSTS: '["evidence.example.com"]', SKRATSCH_MAX_API_PAGES: "100" });
+assert.deepEqual(customPolicy, { maintainerUserIds: [42], evidenceHosts: ["evidence.example.com"], maxApiPages: 100, requiredLanes: ["semantic", "authority-security"] });
+const customEvidence = scenario();
+customEvidence.policy = customPolicy;
+customEvidence.comments = [comment(7, attestation("ACCEPT", "ACCEPT", {
+  semantic: { disposition: "ACCEPT", reviewRunId: "codex:semantic:run-001", evidenceUrl: "https://evidence.example.com/reviews/semantic" },
+  authoritySecurity: { disposition: "ACCEPT", reviewRunId: "codex:security:run-002", evidenceUrl: "https://evidence.example.com/reviews/security" },
+}))];
+assert.equal(evaluateReviewReadiness(customEvidence).ok, true, "custom evidence host and non-root paths should pass");
+customEvidence.comments = [comment(7, attestation("ACCEPT", "ACCEPT", {
+  semantic: { disposition: "ACCEPT", reviewRunId: "codex:semantic:run-001", evidenceUrl: "https://evidence.example.com/" },
+  authoritySecurity: { disposition: "ACCEPT", reviewRunId: "codex:security:run-002", evidenceUrl: "https://evidence.example.com/reviews/security" },
+}))];
+assert.equal(evaluateReviewReadiness(customEvidence).ok, false, "root evidence URL must fail");
+
+const actionMetadata = fs.readFileSync(new URL("./action.yml", import.meta.url), "utf8");
+assert.match(actionMetadata, /SKRATSCH_MAINTAINER_USER_IDS:\s*\$\{\{ inputs\.maintainer-user-ids \}\}/);
+assert.match(actionMetadata, /SKRATSCH_EVIDENCE_HOSTS:\s*\$\{\{ inputs\.evidence-hosts \}\}/);
+assert.match(actionMetadata, /SKRATSCH_MAX_API_PAGES:\s*\$\{\{ inputs\.max-api-pages \}\}/);
+assert.match(actionMetadata, /node "\$GITHUB_ACTION_PATH\/review-readiness\.mjs"/);
 
 const pages = { "/page/1": { data: [{ id: 1 }], link: '<https://api.github.com/page/2>; rel="next"' }, "/page/2": { data: [{ id: 2 }], link: null } };
 assert.deepEqual(await fetchAllPages("/page/1", "token", 3, async (url) => pages[url]), [{ id: 1 }, { id: 2 }]);
 await assert.rejects(() => fetchAllPages("/page/1", "token", 1, async (url) => pages[url]), /fail-closed limit/);
 
-console.log("PASS review-readiness 18 adversarial scenarios");
+console.log("PASS review-readiness 26 contract and adversarial scenarios");
